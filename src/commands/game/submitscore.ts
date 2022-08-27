@@ -177,6 +177,9 @@ export default new BCommand({
 				}
 			}
 
+			playerA.rank = eloToRank(playerA.elorating);
+			playerB.rank = eloToRank(playerB.elorating);
+
 			await playerA.save();
 			await playerB.save();
 		}
