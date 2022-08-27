@@ -39,7 +39,7 @@ export default new BCommand({
 			position.push(`#${i + 1}`);
 		}
 
-		interaction.channel.createMessage({
+		await interaction.channel.createMessage({
 			embeds: [
 				{
 					title: `Previous Ranked Game Leaderboard`,
@@ -68,7 +68,7 @@ export default new BCommand({
 			],
 		});
 
-		users.forEach(async (user) => {
+		for (const user of users) {
 			await new PastUserStats({
 				discordID: user.discordID,
 				elorating: user.elorating,
@@ -84,10 +84,11 @@ export default new BCommand({
 				suspensionUnit: user.suspensionUnit,
 				agents: user.agents,
 				rank: user.rank,
+				doublePotentialElo: 0,
 			}).save();
-		});
+		}
 
-		users.forEach(async (user) => {
+		for (const user of users) {
 			user.elorating = 1500;
 			user.wins = 0;
 			user.losses = 0;
@@ -98,9 +99,9 @@ export default new BCommand({
 			user.gamehistory = [];
 
 			await user.save();
-		});
+		}
 
-		(await interaction.user.getDMChannel()).createMessage({
+		(await (interaction.user ?? interaction.member.user).getDMChannel()).createMessage({
 			content: "Reset operation complete.",
 		});
 	},

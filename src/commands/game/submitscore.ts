@@ -63,151 +63,101 @@ export default new BCommand({
 		const winningTeam = interaction.data.options.find((o) => o.name === "winning-team").value as string;
 		const doubleOrNothing = interaction.data.options.find((o) => o.name === "double-or-nothing").value as string;
 
-		if (gameID.length !== 5) {
-			interaction.createMessage("The game ID must be 5 characters long!");
-			return;
-		}
+		const dbGame = await RankedGame.findOne({ gameRef: gameID });
+		if (!dbGame) return interaction.createMessage({ flags: 64, content: "There is no game found in the system with that ID" });
 
-		const selectedGame = await RankedGame.findOne({
-			gameRef: gameID,
-		});
+		const teamA = dbGame.teamA.map((u) => u.replace(/[<@!>]/g, ""));
+		const teamB = dbGame.teamB.map((u) => u.replace(/[<@!>]/g, ""));
 
-		if (!selectedGame) {
-			interaction.createMessage("There is no such game with that ID.");
-			return;
-		}
+		const dbTeamA = await User.find({ discordID: { $in: teamA } });
+		const dbTeamB = await User.find({ discordID: { $in: teamB } });
 
-		if (selectedGame.scoreSubmitted) {
-			interaction.createMessage(
-				"This game has already been submitted and cannot be re-submitted/altered without appropriate permissions."
+		if (!dbTeamA || !dbTeamB)
+			return interaction.createMessage(
+				"One or more users were not found in the database. Please locate the user and ask them to run /register."
 			);
-			return;
+
+		if (dbTeamA.length !== dbTeamB.length) {
+			return interaction.createMessage(
+				"There is invalid (inequal) team data on the ranked game specified.\nPlease contact deadhash for support if this issue persists."
+			);
 		}
 
-		//* Team user stuff
-		const teamA = selectedGame.teamA.map((player) => player.replace(/[<@!>]/g, ""));
+		for (let i = 0; i < dbTeamA.length; i++) {
+			const playerA = dbTeamA[i];
+			const playerB = dbTeamB[i];
 
-		let teamAUsers = await User.find({
-			discordID: {
-				$in: teamA,
-			},
-		});
+			let expectedScoreA = elo.getExpected(playerA.elorating, playerB.elorating);
+			let expectedScoreB = elo.getExpected(playerB.elorating, playerA.elorating);
 
-		const teamB = selectedGame.teamB.map((player) => player.replace(/[<@!>]/g, ""));
-
-		let teamBUsers = await User.find({
-			discordID: {
-				$in: teamB,
-			},
-		});
-
-		//* Sorting to be balanced for elo calculations
-		teamAUsers.sort((a, b) => a.elorating - b.elorating);
-		teamBUsers.sort((a, b) => a.elorating - b.elorating);
-
-		//* Actual code to change scores etc
-		for (let i = 0; i < teamAUsers.length; i++) {
-			const userA = teamAUsers[i];
-			const userB = teamBUsers[i];
-
-			// Unconditional changes
-			if (!doubleOrNothing) {
-				userA.gamesPlayed++;
-				userB.gamesPlayed++;
-			}
-
-			userA.ratingBefore = userA.elorating;
-			userB.ratingBefore = userB.elorating;
+			// Both player *UNCONDITIONAL* CHANGES
+			playerA.ratingBefore = playerA.elorating;
+			playerB.ratingBefore = playerA.elorating;
 
 			if (winningTeam === "team-a") {
-				let expectedScoreA = elo.getExpected(userA.elorating, userB.elorating);
-				let expectedScoreB = elo.getExpected(userB.elorating, userA.elorating);
-
 				if (!doubleOrNothing) {
-					if (userA.doublePotentialElo > 0) {
-						if (userA.doubleDidLastWin) {
-							userA.elorating += userA.doublePotentialElo * 2;
-							userB.elorating -= userB.doublePotentialElo * 2;
-						} else if (!userA.doubleDidLastWin) {
-							userB.elorating -= userB.doublePotentialElo;
+					playerA.wins++;
+					playerB.losses++;
+
+					playerA.gamehistory.push(1);
+					playerB.gamehistory.push(0);
+
+					playerA.gamesPlayed++;
+					playerB.gamesPlayed++;
+
+					//* Elo affecting logic
+					if (playerA.doublePotentialElo > 0) {
+						if (playerA.doubleDidLastWin) {
+							playerA.elorating += playerA.doublePotentialElo * 2;
+							playerB.elorating -= playerB.doublePotentialElo * 2;
+						} else if (!playerA.doubleDidLastWin) {
+							playerB.elorating -= playerB.doublePotentialElo;
 						}
 					} else {
-						userA.elorating = elo.updateRating(expectedScoreA, 0, userA.elorating);
-						userB.elorating = elo.updateRating(expectedScoreB, 1, userB.elorating);
-					}
+						playerA.elorating = elo.updateRating(expectedScoreA, 1, playerA.elorating);
+						playerB.elorating = elo.updateRating(expectedScoreB, 0, playerB.elorating);
 
-					userA.wins++;
-					userB.losses++;
-
-					userA.gamehistory.push(1);
-					userB.gamehistory.push(0);
-
-					const winstreak = calculateWinstreak(userA);
-
-					if (winstreak === 3) {
-						userA.elorating += 5;
-					} else if (winstreak === 4) {
-						userA.elorating += 6;
-					} else if (winstreak === 5) {
-						userA.elorating += 7;
-					} else if (winstreak >= 6) {
-						userA.elorating += 8;
+						playerA.doublePotentialElo = 0;
+						playerB.doublePotentialElo = 0;
 					}
 				} else {
-					userA.doubleDidLastWin = true;
-					userB.doubleDidLastWin = false;
-
-					userA.doublePotentialElo = Math.abs(userA.elorating - elo.updateRating(expectedScoreA, 1, userA.elorating));
-					userB.doublePotentialElo = Math.abs(userB.elorating - elo.updateRating(expectedScoreA, 0, userA.elorating));
+					playerA.doublePotentialElo = Math.abs(playerA.elorating - elo.updateRating(expectedScoreA, 1, playerA.elorating));
+					playerB.doublePotentialElo = Math.abs(playerB.elorating - elo.updateRating(expectedScoreB, 0, playerB.elorating));
 				}
 			} else {
-				let expectedScoreA = elo.getExpected(userA.elorating, userB.elorating);
-				let expectedScoreB = elo.getExpected(userB.elorating, userA.elorating);
-
 				if (!doubleOrNothing) {
-					if (userB.doublePotentialElo > 0) {
-						if (userB.doubleDidLastWin) {
-							userB.elorating += userB.doublePotentialElo * 2;
-							userA.elorating -= userA.doublePotentialElo * 2;
-						} else if (!userB.doubleDidLastWin) {
-							userA.elorating -= userB.doublePotentialElo;
+					playerB.wins++;
+					playerA.losses++;
+
+					playerB.gamehistory.push(1);
+					playerA.gamehistory.push(0);
+
+					playerA.gamesPlayed++;
+					playerB.gamesPlayed++;
+
+					//* Elo affecting logic
+					if (playerB.doublePotentialElo > 0) {
+						if (playerB.doubleDidLastWin) {
+							playerB.elorating += playerB.doublePotentialElo * 2;
+							playerB.elorating -= playerB.doublePotentialElo * 2;
+						} else if (!playerB.doubleDidLastWin) {
+							playerB.elorating -= playerB.doublePotentialElo;
 						}
 					} else {
-						userA.elorating = elo.updateRating(expectedScoreA, 1, userA.elorating);
-						userB.elorating = elo.updateRating(expectedScoreB, 0, userB.elorating);
-					}
+						playerB.elorating = elo.updateRating(expectedScoreB, 1, playerB.elorating);
+						playerA.elorating = elo.updateRating(expectedScoreA, 0, playerA.elorating);
 
-					userB.wins++;
-					userA.losses++;
-
-					userA.gamehistory.push(0);
-					userB.gamehistory.push(1);
-
-					const winstreak = calculateWinstreak(userB);
-
-					if (winstreak === 3) {
-						userB.elorating += 5;
-					} else if (winstreak === 4) {
-						userB.elorating += 6;
-					} else if (winstreak === 5) {
-						userB.elorating += 7;
-					} else if (winstreak >= 6) {
-						userB.elorating += 8;
+						playerA.doublePotentialElo = 0;
+						playerB.doublePotentialElo = 0;
 					}
 				} else {
-					userA.doubleDidLastWin = false;
-					userB.doubleDidLastWin = true;
-
-					userA.doublePotentialElo = Math.abs(userA.elorating - elo.updateRating(expectedScoreA, 0, userA.elorating));
-					userB.doublePotentialElo = Math.abs(userB.elorating - elo.updateRating(expectedScoreA, 1, userA.elorating));
+					playerA.doublePotentialElo = Math.abs(playerA.elorating - elo.updateRating(expectedScoreA, 0, playerA.elorating));
+					playerB.doublePotentialElo = Math.abs(playerB.elorating - elo.updateRating(expectedScoreB, 1, playerB.elorating));
 				}
 			}
 
-			userA.rank = eloToRank(userA.elorating);
-			userB.rank = eloToRank(userB.elorating);
-
-			await userA.save();
-			await userB.save();
+			await playerA.save();
+			await playerB.save();
 		}
 
 		if (doubleOrNothing) {
@@ -217,11 +167,11 @@ export default new BCommand({
 
 			//* Generate a new game with the *same* teams as last time, just with a new randomly selected map.
 			const { bannedAgents, gameMap, gameRef, selectedmapimage, teamA, teamB } = makeTeams(
-				[...selectedGame.teamA, ...selectedGame.teamB],
+				[...dbGame.teamA, ...dbGame.teamB],
 				true,
 				{
-					teamA: selectedGame.teamA,
-					teamB: selectedGame.teamB,
+					teamA: dbGame.teamA,
+					teamB: dbGame.teamB,
 				}
 			);
 
@@ -290,7 +240,7 @@ export default new BCommand({
 			}
 		}
 
-		selectedGame.scoreSubmitted = true;
-		await selectedGame.save();
+		dbGame.scoreSubmitted = true;
+		await dbGame.save();
 	},
 });

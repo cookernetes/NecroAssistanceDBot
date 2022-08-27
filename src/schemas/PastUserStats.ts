@@ -22,6 +22,9 @@ export interface IPastUser {
 	rank: string;
 	cooldown1v1: number;
 	agentChangeCooldown: number;
+	optOutNameChange: boolean;
+	doublePotentialElo: number; // For double or nothing games which don't *yet* affect ELO.
+	doubleDidLastWin: boolean; // If true, the game was won. If false, the game was lost.
 }
 
 const pastUserSchema = new mongoose.Schema<IPastUser>({
@@ -44,6 +47,9 @@ const pastUserSchema = new mongoose.Schema<IPastUser>({
 	rank: String,
 	cooldown1v1: Number,
 	agentChangeCooldown: Number,
+	optOutNameChange: Boolean,
+	doublePotentialElo: Number, // For double or nothing games which don't *yet* affect ELO.
+	doubleDidLastWin: Boolean, // If true, the game was won. If false, the game was lost.
 });
 
 export default mongoose.model<IPastUser>("PastUser", pastUserSchema);
