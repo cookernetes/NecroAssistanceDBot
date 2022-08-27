@@ -14,7 +14,7 @@ export default new BCommand({
 	run: async ({ interaction }) => {
 		var users = await User.find().where("suspended").ne(true).select("discordID elorating lbpos gamehistory wins gamesPlayed");
 
-		users = users.filter((user) => user.gamehistory.length > 0);
+		users = users.filter((user) => user.gamehistory.length >= 5);
 
 		if (!(users.length > 0))
 			return interaction.createMessage({

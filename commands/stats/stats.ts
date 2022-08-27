@@ -29,9 +29,7 @@ export default new BCommand({
 		});
 
 		if (!userExists) {
-			interaction.createMessage(
-				"User has not registered!\nUse /register now to play ranked games!"
-			);
+			interaction.createMessage("User has not registered!\nUse /register now to play ranked games!");
 
 			return;
 		}
@@ -58,9 +56,7 @@ export default new BCommand({
 		}
 
 		if (!userExists) {
-			interaction.createMessage(
-				"You are not registered! Please use the **/register** slash command to get started!"
-			);
+			interaction.createMessage("You are not registered! Please use the **/register** slash command to get started!");
 			return;
 		} else {
 			const userPfp = user.staticAvatarURL;
@@ -71,10 +67,7 @@ export default new BCommand({
 			if (userExists.gamehistory.length === 0) {
 				past10games = "No past games.";
 			} else {
-				past10games = userExists.gamehistory.slice(
-					-10,
-					userExists.gamehistory.length
-				);
+				past10games = userExists.gamehistory.slice(-10, userExists.gamehistory.length);
 
 				for (let i = 0; i < past10games.length; i++) {
 					if (past10games[i] === 1) {
@@ -103,24 +96,21 @@ export default new BCommand({
 				rank = "Unranked";
 			}
 
-			interaction.createMessage({
+			await interaction.createMessage({
 				embeds: [
 					{
-						title: `${user.username} [${lbpos}]`,
-						description: `${rank}\nGames Played - ${userExists.gamesPlayed}`,
+						title: `${user.username} [${userExists.gamehistory.length >= 5 ? lbpos : "?"}]`,
+						description: `${userExists.gamehistory.length >= 5 ? rank : "Unranked"}\nGames Played - ${userExists.gamesPlayed}`,
 						color: 0x3498db,
 						fields: [
 							{
 								name: `Elo Rating`,
-								value: `${userExists.elorating}`,
+								value: `${userExists.gamehistory.length >= 5 ? userExists.elorating : "Hidden"}`,
 								inline: true,
 							},
 							{
 								name: `**Win %**`,
-								value: `${(
-									(userExists.wins / userExists.gamesPlayed) *
-									100
-								).toFixed(1)}%`,
+								value: `${((userExists.wins / userExists.gamesPlayed) * 100).toFixed(1)}%`,
 								inline: true,
 							},
 							{
