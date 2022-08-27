@@ -83,6 +83,11 @@ export default new BCommand({
 			);
 		}
 
+		if (dbGame.scoreSubmitted)
+			return interaction.createMessage(
+				"This game has already been submitted.\nIf you believe this to be an issue, contact deadhash directly."
+			);
+
 		for (let i = 0; i < dbTeamA.length; i++) {
 			const playerA = dbTeamA[i];
 			const playerB = dbTeamB[i];
