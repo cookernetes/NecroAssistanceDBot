@@ -72,6 +72,10 @@ export default new BCommand({
 				for (let i = 0; i < past10games.length; i++) {
 					if (past10games[i] === 1) {
 						past10games[i] = "<:win:964287115024281691>";
+					} else if (past10games[i] === 2) {
+						past10games[i] = "<:doubleOrNothingWin:1013213952752238593>";
+					} else if (past10games[i] === 3) {
+						past10games[i] = "<:doubleOrNothingLoss:1013215072648175767>";
 					} else {
 						past10games[i] = "<:loss:964287148989771826>";
 					}

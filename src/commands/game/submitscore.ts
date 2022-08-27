@@ -104,8 +104,13 @@ export default new BCommand({
 					playerA.wins++;
 					playerB.losses++;
 
-					playerA.gamehistory.push(1);
-					playerB.gamehistory.push(0);
+					if (playerA.doublePotentialElo > 0 && playerA.doubleDidLastWin) {
+						playerA.gamehistory.push(2);
+						playerB.gamehistory.push(3);
+					} else {
+						playerA.gamehistory.push(1);
+						playerB.gamehistory.push(0);
+					}
 
 					playerA.gamesPlayed++;
 					playerB.gamesPlayed++;
@@ -126,6 +131,9 @@ export default new BCommand({
 						playerB.doublePotentialElo = 0;
 					}
 				} else {
+					playerA.doubleDidLastWin = true;
+					playerB.doubleDidLastWin = false;
+
 					playerA.doublePotentialElo = Math.abs(playerA.elorating - elo.updateRating(expectedScoreA, 1, playerA.elorating));
 					playerB.doublePotentialElo = Math.abs(playerB.elorating - elo.updateRating(expectedScoreB, 0, playerB.elorating));
 				}
@@ -134,8 +142,13 @@ export default new BCommand({
 					playerB.wins++;
 					playerA.losses++;
 
-					playerB.gamehistory.push(1);
-					playerA.gamehistory.push(0);
+					if (playerB.doublePotentialElo > 0 && playerB.doubleDidLastWin) {
+						playerA.gamehistory.push(3);
+						playerB.gamehistory.push(2);
+					} else {
+						playerA.gamehistory.push(0);
+						playerB.gamehistory.push(1);
+					}
 
 					playerA.gamesPlayed++;
 					playerB.gamesPlayed++;
@@ -156,6 +169,9 @@ export default new BCommand({
 						playerB.doublePotentialElo = 0;
 					}
 				} else {
+					playerA.doubleDidLastWin = false;
+					playerB.doubleDidLastWin = true;
+
 					playerA.doublePotentialElo = Math.abs(playerA.elorating - elo.updateRating(expectedScoreA, 0, playerA.elorating));
 					playerB.doublePotentialElo = Math.abs(playerB.elorating - elo.updateRating(expectedScoreB, 1, playerB.elorating));
 				}
