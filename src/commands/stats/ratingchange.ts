@@ -12,26 +12,22 @@ export default new BCommand({
 		const userExists = await User.findOne({ discordID: interaction.member.id });
 
 		if (!userExists) {
-			interaction.createMessage(
-				"You are not registered! Please use the **/register** slash command to get started!"
-			);
+			interaction.createMessage("You are not registered! Please use the **/register** slash command to get started!");
 			return;
 		}
 
 		if (userExists.gamehistory.length === 0) {
-			interaction.createMessage("You have not played any games yet!");
-			return;
+			return interaction.createMessage("You have not played any games yet!");
 		}
+
+		if (!(userExists.gamehistory.length > 5))
+			return interaction.createMessage("You have not played your 5 placement games to use this command.");
 
 		if (userExists.ratingBefore === 0) {
 			interaction.createMessage("Your elo has not changed.");
 			return;
 		}
 
-		interaction.createMessage(
-			`Your elo has changed by ${
-				userExists.elorating - userExists.ratingBefore
-			}`
-		);
+		interaction.createMessage(`Your elo has changed by ${userExists.elorating - userExists.ratingBefore}`);
 	},
 });
