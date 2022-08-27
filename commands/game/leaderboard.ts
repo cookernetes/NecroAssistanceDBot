@@ -1,5 +1,5 @@
 import User from "../../schemas/User";
-import Eris, { Embed } from "eris";
+import Eris, { Member } from "eris";
 import { BCommand } from "../../structures/Command";
 
 import { CanvasTable, CTColumn, CTConfig, CTData, CTOptions } from "canvas-table";
@@ -12,11 +12,7 @@ export default new BCommand({
 	type: Eris.Constants.ApplicationCommandTypes.CHAT_INPUT,
 
 	run: async ({ interaction }) => {
-		var users = await User.find()
-			.where("suspended")
-			.ne(true)
-			.select("discordID elorating lbpos gamehistory wins gamesPlayed")
-			.sort("-elorating");
+		var users = await User.find().where("suspended").ne(true).select("discordID elorating lbpos gamehistory wins gamesPlayed");
 
 		users = users.filter((user) => user.gamehistory.length > 0);
 
@@ -37,13 +33,16 @@ export default new BCommand({
 
 		const data: CTData = [];
 
-		const usernames: string[] = (
-			await bot.guilds.get(interaction.guildID).fetchMembers({ userIDs: users.map((u) => u.discordID) })
-		).map((u) => u.username);
+		const usernames: Member[] = await bot.guilds
+			.get(interaction.guildID)
+			.fetchMembers({ userIDs: users.map((u) => u.discordID) });
+
+		console.log(usernames.length);
 
 		for (let i = 0; i < users.length; i++) {
 			const user = users[i];
-			const username = usernames[i];
+			const fndUser = usernames.find((u) => u.user.id === user.discordID);
+			const username = fndUser.username ?? fndUser.user.username;
 
 			const winrate = `${((user.wins / user.gamesPlayed) * 100).toFixed(0)}%`;
 			data.push([user.lbpos.toString(), username, user.elorating.toString(), winrate]);
@@ -83,8 +82,6 @@ export default new BCommand({
 		const config: CTConfig = { columns, data, options };
 		const ct = new CanvasTable(canvas, config);
 		await ct.generateTable();
-
-		console.log();
 
 		const fileToSend: Eris.FileContent = {
 			name: "Ranked Leaderboard.png",
