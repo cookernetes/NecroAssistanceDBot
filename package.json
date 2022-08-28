@@ -32,5 +32,8 @@
 		"ts-node-dev": "^1.1.8",
 		"tslib": "^2.4.0",
 		"typescript": "^4.4.4"
+	},
+	"devDependencies": {
+		"@types/elo-rank": "^1.0.1"
 	}
 }

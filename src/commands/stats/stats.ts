@@ -70,14 +70,30 @@ export default new BCommand({
 				past10games = userExists.gamehistory.slice(-10, userExists.gamehistory.length);
 
 				for (let i = 0; i < past10games.length; i++) {
-					if (past10games[i] === 1) {
-						past10games[i] = "<:win:964287115024281691>";
-					} else if (past10games[i] === 2) {
-						past10games[i] = "<:doubleOrNothingWin:1013213952752238593>";
-					} else if (past10games[i] === 3) {
-						past10games[i] = "<:doubleOrNothingLoss:1013215072648175767>";
-					} else {
-						past10games[i] = "<:loss:964287148989771826>";
+					switch (past10games[i]) {
+						case 1:
+							past10games[i] = "<:win:964287115024281691>";
+							break;
+
+						case 2:
+							past10games[i] = "<:doubleOrNothingWin:1013213952752238593>";
+							break;
+
+						case 3:
+							past10games[i] = "<:doubleOrNothingLoss:1013215072648175767>";
+							break;
+
+						case 4:
+							past10games[i] = "<:neutralWin:1013455145943707698>";
+							break;
+
+						case 5:
+							past10games[i] = "<:wonFirstLostSecond:1013455126410838057>";
+							break;
+
+						default:
+							past10games[i] = "<:loss:964287148989771826>";
+							break;
 					}
 				}
 			}

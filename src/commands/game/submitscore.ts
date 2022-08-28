@@ -97,16 +97,21 @@ export default new BCommand({
 
 			// Both player *UNCONDITIONAL* CHANGES
 			playerA.ratingBefore = playerA.elorating;
-			playerB.ratingBefore = playerA.elorating;
+			playerB.ratingBefore = playerB.elorating;
 
 			if (winningTeam === "team-a") {
 				if (!doubleOrNothing) {
 					playerA.wins++;
 					playerB.losses++;
 
-					if (playerA.doublePotentialElo > 0 && playerA.doubleDidLastWin) {
-						playerA.gamehistory.push(2);
-						playerB.gamehistory.push(3);
+					if (playerA.doublePotentialElo > 0) {
+						if (playerA.doubleDidLastWin) {
+							playerA.gamehistory.push(2);
+							playerB.gamehistory.push(3);
+						} else if (!playerA.doubleDidLastWin) {
+							playerA.gamehistory.push(4);
+							playerB.gamehistory.push(5);
+						}
 					} else {
 						playerA.gamehistory.push(1);
 						playerB.gamehistory.push(0);
@@ -123,12 +128,12 @@ export default new BCommand({
 						} else if (!playerA.doubleDidLastWin) {
 							playerB.elorating -= playerB.doublePotentialElo;
 						}
-					} else {
-						playerA.elorating = elo.updateRating(expectedScoreA, 1, playerA.elorating);
-						playerB.elorating = elo.updateRating(expectedScoreB, 0, playerB.elorating);
 
 						playerA.doublePotentialElo = 0;
 						playerB.doublePotentialElo = 0;
+					} else {
+						playerA.elorating = elo.updateRating(expectedScoreA, 1, playerA.elorating);
+						playerB.elorating = elo.updateRating(expectedScoreB, 0, playerB.elorating);
 					}
 				} else {
 					playerA.doubleDidLastWin = true;
@@ -142,12 +147,17 @@ export default new BCommand({
 					playerB.wins++;
 					playerA.losses++;
 
-					if (playerB.doublePotentialElo > 0 && playerB.doubleDidLastWin) {
-						playerA.gamehistory.push(3);
-						playerB.gamehistory.push(2);
+					if (playerB.doublePotentialElo > 0) {
+						if (playerB.doubleDidLastWin) {
+							playerB.gamehistory.push(2);
+							playerA.gamehistory.push(3);
+						} else if (!playerB.doubleDidLastWin) {
+							playerA.gamehistory.push(5);
+							playerB.gamehistory.push(4);
+						}
 					} else {
-						playerA.gamehistory.push(0);
 						playerB.gamehistory.push(1);
+						playerA.gamehistory.push(0);
 					}
 
 					playerA.gamesPlayed++;
@@ -157,10 +167,13 @@ export default new BCommand({
 					if (playerB.doublePotentialElo > 0) {
 						if (playerB.doubleDidLastWin) {
 							playerB.elorating += playerB.doublePotentialElo * 2;
-							playerB.elorating -= playerB.doublePotentialElo * 2;
+							playerA.elorating -= playerA.doublePotentialElo * 2;
 						} else if (!playerB.doubleDidLastWin) {
-							playerB.elorating -= playerB.doublePotentialElo;
+							playerA.elorating -= playerA.doublePotentialElo;
 						}
+
+						playerA.doublePotentialElo = 0;
+						playerB.doublePotentialElo = 0;
 					} else {
 						playerB.elorating = elo.updateRating(expectedScoreB, 1, playerB.elorating);
 						playerA.elorating = elo.updateRating(expectedScoreA, 0, playerA.elorating);
@@ -199,7 +212,7 @@ export default new BCommand({
 				}
 			);
 
-			new RankedGame({
+			await new RankedGame({
 				gameMap: gameMap,
 				gameRef: gameRef,
 				teamA: teamA,
@@ -260,7 +273,7 @@ export default new BCommand({
 
 			for (let i = 0; i < users.length; i++) {
 				users[i].lbpos = i + 1;
-				users[i].save();
+				await users[i].save();
 			}
 		}
 

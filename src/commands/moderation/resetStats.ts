@@ -97,6 +97,7 @@ export default new BCommand({
 			user.ratingBefore = 0;
 			user.rank = "Unranked";
 			user.gamehistory = [];
+			user.doublePotentialElo = 0;
 
 			await user.save();
 		}
